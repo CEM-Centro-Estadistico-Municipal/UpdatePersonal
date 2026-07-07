@@ -265,8 +265,24 @@ select:focus, input[type=text]:focus { border-color: var(--blue-500); }
 .new-person-form { display: none; margin-top: 14px; padding: 16px; background: var(--blue-50); border-radius: 12px; }
 .new-person-form.open { display: block; }
 
+.bulk-toggle-row { margin: 4px 0 16px; }
+.bulk-panel {
+  display: none;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: var(--amber-50);
+  border: 1px solid #f3d99a;
+  border-radius: 12px;
+}
+.bulk-panel.open { display: block; }
+.bulk-panel input[type=file] {
+  font-family: 'Nunito Sans', sans-serif;
+  font-size: 14px;
+}
+
 footer.foot { text-align: center; color: var(--ink-400); font-size: 12px; margin-top: 40px; }
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -308,6 +324,26 @@ footer.foot { text-align: center; color: var(--ink-400); font-size: 12px; margin
   <div class="card" id="step-people" style="display:none;">
     <div class="section-title">Equipo relevado <span class="badge-count" id="count-badge">0</span></div>
     <p class="section-sub">Por cada persona: confirmá si sigue igual, modificá el régimen de contratación u otro dato, o dala de baja.</p>
+
+    <div class="bulk-toggle-row">
+      <button class="btn btn-ghost btn-small" id="btn-toggle-bulk">📄 Prefiero subir una planilla con todo mi equipo</button>
+    </div>
+
+    <div class="bulk-panel" id="bulk-panel">
+      <p class="section-sub" style="margin-top:0;">Descargá la planilla de tu equipo, editala en Excel/Sheets (marcá bajas cambiando la columna <strong>estado</strong> a "Baja", modificá los datos que cambiaron, y agregá filas nuevas al final para las altas — dejando <strong>id_persona</strong> vacío en esas filas), y después subila acá.</p>
+      <div class="actions-row">
+        <button class="btn btn-primary btn-small" id="btn-descargar-planilla">⬇ Descargar planilla de este equipo</button>
+      </div>
+      <div style="margin-top:16px;">
+        <label class="field-label">Subir planilla completada (.xlsx)</label>
+        <input type="file" id="bulk-file-input" accept=".xlsx,.xls">
+        <div class="actions-row" style="margin-top:10px;">
+          <button class="btn btn-primary btn-small" id="btn-procesar-planilla">Procesar planilla</button>
+        </div>
+      </div>
+      <div id="bulk-resultado" class="hint" style="margin-top:12px;"></div>
+    </div>
+
     <div id="loading-people" class="loading">Cargando equipo…</div>
     <div id="people-list"></div>
 
@@ -683,6 +719,87 @@ $('#np-guardar').addEventListener('click', async () => {
     $('#new-person-form').classList.remove('open');
   } else {
     alert('Error: ' + res.error);
+  }
+});
+
+// ---------- Carga masiva (planilla) ----------
+
+const BULK_HEADERS = ['id_persona','nombre','dni','cargo','tipo_contratacion','tiene_designacion',
+  'funcion_tarea','estudios_realizados','cursa_actualmente','turno','dias_presencia','estado','motivo_cambio'];
+
+$('#btn-toggle-bulk').addEventListener('click', () => {
+  $('#bulk-panel').classList.toggle('open');
+});
+
+$('#btn-descargar-planilla').addEventListener('click', () => {
+  const filas = state.personal.map(p => ({
+    id_persona: p.id_persona,
+    nombre: p.nombre,
+    dni: p.dni || '',
+    cargo: p.cargo || '',
+    tipo_contratacion: p.tipo_contratacion || '',
+    tiene_designacion: p.tiene_designacion || '',
+    funcion_tarea: p.funcion_tarea || '',
+    estudios_realizados: p.estudios_realizados || '',
+    cursa_actualmente: p.cursa_actualmente || '',
+    turno: p.turno || '',
+    dias_presencia: p.dias_presencia || '',
+    estado: 'Activo',
+    motivo_cambio: ''
+  }));
+  // agrega filas vacías al final para cargar altas nuevas
+  for (let i = 0; i < 5; i++) {
+    filas.push({ id_persona: '', nombre: '', dni: '', cargo: '', tipo_contratacion: '', tiene_designacion: '',
+      funcion_tarea: '', estudios_realizados: '', cursa_actualmente: '', turno: '', dias_presencia: '',
+      estado: '', motivo_cambio: '' });
+  }
+  const ws = XLSX.utils.json_to_sheet(filas, { header: BULK_HEADERS });
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Equipo');
+  const nombreArchivo = 'Equipo_' + state.direccion.replace(/[^a-zA-Z0-9]+/g, '_').substring(0, 60) + '.xlsx';
+  XLSX.writeFile(wb, nombreArchivo);
+});
+
+$('#btn-procesar-planilla').addEventListener('click', async () => {
+  const respondente = await ensureRespondente();
+  if (!respondente) return;
+  const fileInput = $('#bulk-file-input');
+  if (!fileInput.files || fileInput.files.length === 0) {
+    alert('Elegí primero el archivo de la planilla completada.');
+    return;
+  }
+  const file = fileInput.files[0];
+  const resultadoDiv = $('#bulk-resultado');
+  resultadoDiv.textContent = 'Procesando…';
+
+  try {
+    const data = await file.arrayBuffer();
+    const workbook = XLSX.read(new Uint8Array(data), { type: 'array' });
+    const firstSheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[firstSheetName];
+    const filas = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+    const res = await apiPost({
+      action: 'bulk_update',
+      direccion: state.direccion,
+      secretaria: state.customSecretaria || '',
+      respondente,
+      filas
+    });
+
+    if (!res.ok) {
+      resultadoDiv.textContent = 'Error: ' + res.error;
+      return;
+    }
+    const r = res.resumen;
+    resultadoDiv.innerHTML = `Listo — Confirmadas: ${r.confirmadas} · Modificadas: ${r.modificadas} · Bajas: ${r.bajas} · Altas: ${r.altas}` +
+      (r.errores && r.errores.length ? `<br><span style="color:var(--red-500)">Atención: ${r.errores.join(' | ')}</span>` : '');
+
+    // refrescar el listado de personas de esta dirección
+    await selectDireccion(state.direccion);
+  } catch (err) {
+    resultadoDiv.textContent = 'No se pudo leer el archivo. Verificá que sea el Excel descargado (o uno con las mismas columnas).';
+    console.error(err);
   }
 });
 
