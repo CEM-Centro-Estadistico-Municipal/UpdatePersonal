@@ -412,7 +412,7 @@ function renderComboList(query) {
   const q = (query || '').trim().toLowerCase();
   const all = state.allDirecciones || [];
   const matches = q ? all.filter(d => d.toLowerCase().includes(q)) : all;
-  const shown = matches.slice(0, 12);
+  const shown = matches;
 
   let html = '';
   if (shown.length === 0) {
