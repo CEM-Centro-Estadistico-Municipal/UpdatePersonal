@@ -119,6 +119,41 @@ select:focus, input[type=text]:focus { border-color: var(--blue-500); }
 
 .hint { font-size: 13px; color: var(--ink-400); margin-top: 6px; }
 
+.combo-wrap { position: relative; }
+.combo-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0; right: 0;
+  background: var(--white);
+  border: 1px solid var(--ink-200);
+  border-radius: 12px;
+  max-height: 280px;
+  overflow-y: auto;
+  box-shadow: var(--shadow-sm);
+  z-index: 30;
+  display: none;
+}
+.combo-list.show { display: block; }
+.combo-item {
+  padding: 10px 14px;
+  font-size: 14px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--ink-100);
+}
+.combo-item:last-child { border-bottom: none; }
+.combo-item:hover, .combo-item.active { background: var(--blue-50); }
+.combo-item.otros { color: var(--blue-700); font-weight: 800; }
+.combo-empty { padding: 10px 14px; font-size: 13px; color: var(--ink-400); }
+
+.otros-form {
+  display: none;
+  margin-top: 14px;
+  padding: 16px;
+  background: var(--blue-50);
+  border-radius: 12px;
+}
+.otros-form.open { display: block; }
+
 .btn {
   font-family: 'Archivo', sans-serif;
   font-weight: 800;
@@ -247,11 +282,23 @@ footer.foot { text-align: center; color: var(--ink-400); font-size: 12px; margin
   <div class="card" id="step-select">
     <div class="section-title">Elegí tu dirección</div>
     <p class="section-sub">Vas a ver el equipo relevado hace 3 meses para esa área.</p>
-    <label class="field-label" for="direccion-select">Dirección / Unidad</label>
-    <select id="direccion-select">
-      <option value="">Cargando direcciones…</option>
-    </select>
-    <div class="hint">¿Tu área no aparece o está mal asignada? Elegí la más cercana y avisanos por separado, o agregala como "alta".</div>
+    <label class="field-label" for="direccion-input">Dirección / Unidad</label>
+    <div class="combo-wrap">
+      <input type="text" id="direccion-input" autocomplete="off" disabled placeholder="Cargando direcciones…">
+      <div class="combo-list" id="combo-list"></div>
+    </div>
+    <div class="hint">¿Tu área no aparece con el nombre correcto? Elegí <strong>"Otros — especificar"</strong> al final de la lista y cargala vos misma/o, con su equipo completo desde cero.</div>
+
+    <div class="otros-form" id="otros-form">
+      <label class="field-label">Nombre completo de la unidad</label>
+      <input type="text" id="otros-nombre-unidad" placeholder="Ej: Dirección de Innovación Tecnológica">
+      <label class="field-label">Secretaría (opcional)</label>
+      <input type="text" id="otros-secretaria" placeholder="Ej: Coordinación General">
+      <div class="actions-row">
+        <button class="btn btn-primary btn-small" id="otros-confirmar">Usar esta unidad</button>
+        <button class="btn btn-ghost btn-small" id="otros-cancelar">Cancelar</button>
+      </div>
+    </div>
   </div>
 
   <!-- Banner de motivo global opcional -->
@@ -320,7 +367,9 @@ const state = {
   direccion: null,
   personal: [],
   respondente: '',
-  changes: {} // id_persona -> {tipo_accion, ...}
+  changes: {}, // id_persona -> {tipo_accion, ...}
+  allDirecciones: [],
+  customSecretaria: ''
 };
 
 const $ = (sel) => document.querySelector(sel);
@@ -341,14 +390,15 @@ async function apiPost(body) {
 }
 
 async function initDirecciones() {
-  const select = $('#direccion-select');
+  const list = $('#combo-list');
   try {
     const data = await apiGet({ action: 'list_direcciones' });
     if (!data.ok) throw new Error(data.error);
-    select.innerHTML = '<option value="">— Elegí una dirección —</option>' +
-      data.direcciones.map(d => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join('');
+    state.allDirecciones = data.direcciones;
+    $('#direccion-input').disabled = false;
+    $('#direccion-input').placeholder = 'Escribí para buscar tu dirección…';
   } catch (err) {
-    select.innerHTML = '<option value="">Error al cargar. Recargá la página.</option>';
+    $('#direccion-input').placeholder = 'Error al cargar. Recargá la página.';
     console.error(err);
   }
 }
@@ -357,8 +407,60 @@ function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
 
-$('#direccion-select').addEventListener('change', async (e) => {
-  const direccion = e.target.value;
+function renderComboList(query) {
+  const list = $('#combo-list');
+  const q = (query || '').trim().toLowerCase();
+  const all = state.allDirecciones || [];
+  const matches = q ? all.filter(d => d.toLowerCase().includes(q)) : all;
+  const shown = matches.slice(0, 12);
+
+  let html = '';
+  if (shown.length === 0) {
+    html += '<div class="combo-empty">No hay coincidencias.</div>';
+  } else {
+    html += shown.map(d => `<div class="combo-item" data-value="${escapeHtml(d)}">${escapeHtml(d)}</div>`).join('');
+  }
+  html += `<div class="combo-item otros" data-otros="1">+ Otros — especificar</div>`;
+  list.innerHTML = html;
+  list.classList.add('show');
+
+  list.querySelectorAll('.combo-item[data-value]').forEach(el => {
+    el.addEventListener('mousedown', (ev) => {
+      ev.preventDefault();
+      const val = el.getAttribute('data-value');
+      $('#direccion-input').value = val;
+      list.classList.remove('show');
+      $('#otros-form').classList.remove('open');
+      selectDireccion(val);
+    });
+  });
+  list.querySelector('.combo-item.otros').addEventListener('mousedown', (ev) => {
+    ev.preventDefault();
+    list.classList.remove('show');
+    $('#otros-form').classList.add('open');
+    $('#otros-nombre-unidad').focus();
+  });
+}
+
+$('#direccion-input').addEventListener('focus', () => renderComboList($('#direccion-input').value));
+$('#direccion-input').addEventListener('input', (e) => renderComboList(e.target.value));
+$('#direccion-input').addEventListener('blur', () => {
+  setTimeout(() => $('#combo-list').classList.remove('show'), 120);
+});
+
+$('#otros-cancelar').addEventListener('click', () => {
+  $('#otros-form').classList.remove('open');
+});
+$('#otros-confirmar').addEventListener('click', () => {
+  const nombreUnidad = $('#otros-nombre-unidad').value.trim();
+  if (!nombreUnidad) { alert('Escribí el nombre completo de la unidad.'); return; }
+  state.customSecretaria = $('#otros-secretaria').value.trim();
+  $('#direccion-input').value = nombreUnidad;
+  $('#otros-form').classList.remove('open');
+  selectDireccion(nombreUnidad);
+});
+
+async function selectDireccion(direccion) {
   if (!direccion) {
     $('#step-people').style.display = 'none';
     $('#step-respondente').style.display = 'none';
@@ -379,7 +481,7 @@ $('#direccion-select').addEventListener('change', async (e) => {
   state.personal = data.personal;
   $('#count-badge').textContent = state.personal.length;
   renderPeople();
-});
+}
 
 function renderPeople() {
   const container = $('#people-list');
@@ -561,6 +663,7 @@ $('#np-guardar').addEventListener('click', async () => {
   const body = {
     action: 'alta',
     direccion: state.direccion,
+    secretaria: state.customSecretaria || '',
     nombre,
     dni: $('#np-dni').value.trim(),
     tipo_contratacion: $('#np-tipo-contratacion').value,
