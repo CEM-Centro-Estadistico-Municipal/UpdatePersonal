@@ -275,7 +275,7 @@ footer.foot { text-align: center; color: var(--ink-400); font-size: 12px; margin
       <select id="np-tipo-contratacion">
         <option value="Planta permanente">Planta permanente</option>
         <option value="Contratado">Contratado</option>
-        <option value="Quincenal">Quincenal</option>
+        <option value="PIC">PIC (Programa de Inclusión Comunitaria)</option>
         <option value="no sabe">No sabe / a confirmar</option>
       </select>
       <label class="field-label">Función / tarea (opcional)</label>
@@ -395,6 +395,10 @@ function renderPeople() {
     card.querySelector('.btn-modificar').addEventListener('click', () => togglePanel(p.id_persona));
     card.querySelector('.btn-baja').addEventListener('click', () => onBaja(p.id_persona));
     card.querySelector('.btn-guardar-mod').addEventListener('click', () => onGuardarModificacion(p.id_persona));
+    const btnCompletar = card.querySelector('.btn-completar');
+    if (btnCompletar) btnCompletar.addEventListener('click', () => toggleCompletarPanel(p.id_persona));
+    const btnGuardarCompletar = card.querySelector('.btn-guardar-completar');
+    if (btnGuardarCompletar) btnGuardarCompletar.addEventListener('click', () => onGuardarCompletar(p.id_persona));
   });
 }
 
@@ -411,6 +415,7 @@ function personCardHtml(p) {
     <div class="actions-row">
       <button class="btn btn-primary btn-small btn-confirmar">Confirmar sin cambios</button>
       <button class="btn btn-ghost btn-small btn-modificar">Modificar régimen</button>
+      <button class="btn btn-ghost btn-small btn-completar" style="display:${faltanDatos(p) ? 'inline-flex' : 'none'};">Completar datos faltantes</button>
       <button class="btn btn-danger btn-small btn-baja">Dar de baja</button>
     </div>
     <div class="edit-panel" id="panel-${p.id_persona}">
@@ -418,7 +423,7 @@ function personCardHtml(p) {
       <select id="new-regimen-${p.id_persona}">
         <option value="Planta permanente">Planta permanente</option>
         <option value="Contratado">Contratado</option>
-        <option value="Quincenal">Quincenal</option>
+        <option value="PIC">PIC (Programa de Inclusión Comunitaria)</option>
         <option value="no sabe">No sabe / a confirmar</option>
       </select>
       <label class="field-label">Motivo del cambio</label>
@@ -430,11 +435,64 @@ function personCardHtml(p) {
       </select>
       <button class="btn btn-primary btn-small btn-guardar-mod">Guardar modificación</button>
     </div>
+    <div class="edit-panel" id="completar-panel-${p.id_persona}">
+      ${camposFaltantesHtml(p)}
+      <button class="btn btn-primary btn-small btn-guardar-completar">Guardar datos</button>
+    </div>
   </div>`;
+}
+
+const CAMPOS_COMPLETABLES = [
+  { key: 'cargo', label: 'Cargo' },
+  { key: 'dni', label: 'DNI' },
+  { key: 'funcion_tarea', label: 'Función / Tarea' },
+  { key: 'estudios_realizados', label: 'Estudios realizados' },
+  { key: 'cursa_actualmente', label: 'Cursa actualmente' },
+  { key: 'turno', label: 'Turno' },
+  { key: 'dias_presencia', label: 'Días de presencia' }
+];
+
+function faltanDatos(p) {
+  return CAMPOS_COMPLETABLES.some(c => !p[c.key] || String(p[c.key]).trim() === '');
+}
+
+function camposFaltantesHtml(p) {
+  const faltantes = CAMPOS_COMPLETABLES.filter(c => !p[c.key] || String(p[c.key]).trim() === '');
+  if (faltantes.length === 0) return '<p class="hint">No hay datos faltantes para esta persona.</p>';
+  return faltantes.map(c => `
+    <label class="field-label">${c.label}</label>
+    <input type="text" id="completar-${c.key}-${p.id_persona}" placeholder="Completar ${c.label.toLowerCase()}">
+  `).join('');
 }
 
 function togglePanel(id) {
   document.getElementById('panel-' + id).classList.toggle('open');
+}
+
+function toggleCompletarPanel(id) {
+  document.getElementById('completar-panel-' + id).classList.toggle('open');
+}
+
+async function onGuardarCompletar(id) {
+  const respondente = await ensureRespondente();
+  if (!respondente) return;
+  const campos = {};
+  CAMPOS_COMPLETABLES.forEach(c => {
+    const el = document.getElementById('completar-' + c.key + '-' + id);
+    if (el && el.value.trim() !== '') campos[c.key] = el.value.trim();
+  });
+  if (Object.keys(campos).length === 0) {
+    alert('No cargaste ningún dato nuevo.');
+    return;
+  }
+  const res = await apiPost({ action: 'completar_datos', id_persona: id, campos, respondente });
+  if (res.ok) {
+    toggleCompletarPanel(id);
+    const btn = document.getElementById('card-' + id).querySelector('.btn-completar');
+    if (btn) btn.style.display = 'none';
+  } else {
+    alert('Error: ' + res.error);
+  }
 }
 
 function markDone(id, label, cls) {
