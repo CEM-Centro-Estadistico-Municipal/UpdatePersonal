@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CEM Esquina — Actualización de Personal 2026</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;800;900&family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700;6..12,800;6..12,900&display=swap');
+
+:root {
+  --blue-50:  #ecf8ff;
+  --blue-100: #d4eefe;
+  --blue-200: #aadcfb;
+  --blue-400: #40b2f4;
+  --blue-500: #1fa3ec;
+  --blue-600: #0f8bd6;
+  --blue-700: #0f72b0;
+  --blue-900: #143f5e;
+  --ink-900: #111418;
+  --ink-700: #38434f;
+  --ink-600: #54616e;
+  --ink-400: #9aa6b2;
+  --ink-200: #e1e7ec;
+  --ink-100: #eef2f6;
+  --ink-50:  #f6f9fb;
+  --white:   #ffffff;
+  --sun-300: #fadd5c;
+  --sun-500: #fbb912;
+  --green-500: #2faa5a;
+  --green-50:  #e8f6ee;
+  --red-500:   #e0413c;
+  --red-50:    #fdeceb;
+  --amber-500: #f0a821;
+  --amber-50:  #fdf3e0;
+  --radius-pill: 999px;
+  --radius-lg: 18px;
+  --shadow-sm: 0 2px 8px rgba(20,63,94,.08);
+  --shadow-brand: 0 8px 24px rgba(31,163,236,.28);
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: 'Nunito Sans', sans-serif;
+  background: var(--blue-50);
+  color: var(--ink-900);
+}
+.wrap { max-width: 760px; margin: 0 auto; padding: 32px 20px 80px; }
+
+header.top {
+  text-align: center;
+  padding: 28px 20px 24px;
+}
+.eyebrow {
+  display: inline-block;
+  font-family: 'Archivo', sans-serif;
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: .04em;
+  color: var(--blue-700);
+  background: var(--blue-100);
+  padding: 6px 16px;
+  border-radius: var(--radius-pill);
+  margin-bottom: 14px;
+}
+h1 {
+  font-family: 'Anton', sans-serif;
+  font-weight: 400;
+  text-transform: uppercase;
+  font-size: clamp(28px, 6vw, 42px);
+  line-height: 1.05;
+  margin: 0 0 10px;
+}
+h1 .box {
+  background: var(--blue-500);
+  color: var(--white);
+  padding: 2px 12px;
+  border-radius: 6px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+.subtitle {
+  color: var(--ink-600);
+  font-size: 16px;
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.card {
+  background: var(--white);
+  border: 1px solid var(--ink-200);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 24px;
+  margin-bottom: 20px;
+}
+
+label.field-label {
+  display: block;
+  font-family: 'Archivo', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--ink-700);
+  margin-bottom: 8px;
+}
+select, input[type=text] {
+  width: 100%;
+  font-family: 'Nunito Sans', sans-serif;
+  font-size: 16px;
+  padding: 12px 14px;
+  border: 2px solid var(--ink-200);
+  border-radius: 12px;
+  background: var(--white);
+  color: var(--ink-900);
+  outline: none;
+  transition: border-color .15s ease;
+}
+select:focus, input[type=text]:focus { border-color: var(--blue-500); }
+
+.hint { font-size: 13px; color: var(--ink-400); margin-top: 6px; }
+
+.btn {
+  font-family: 'Archivo', sans-serif;
+  font-weight: 800;
+  font-size: 15px;
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: 12px 24px;
+  cursor: pointer;
+  transition: transform .12s ease, filter .12s ease;
+}
+.btn:active { transform: scale(.97); }
+.btn-primary { background: var(--blue-500); color: var(--white); box-shadow: var(--shadow-brand); }
+.btn-primary:hover { filter: brightness(.94); }
+.btn-primary:disabled { background: var(--ink-200); color: var(--ink-400); box-shadow: none; cursor: not-allowed; }
+.btn-ghost { background: var(--white); color: var(--blue-700); border: 2px solid var(--blue-200); }
+.btn-ghost:hover { background: var(--blue-50); }
+.btn-danger { background: var(--red-50); color: var(--red-500); border: 2px solid #f6c9c7; }
+.btn-danger:hover { background: #fbdcda; }
+.btn-small { padding: 8px 16px; font-size: 13px; }
+
+.person-card {
+  border: 1px solid var(--ink-200);
+  border-radius: 14px;
+  padding: 16px 18px;
+  margin-bottom: 12px;
+  transition: box-shadow .15s ease;
+}
+.person-card.done { border-color: var(--green-500); background: var(--green-50); }
+.person-card.baja { border-color: var(--red-500); background: var(--red-50); opacity: .7; }
+
+.person-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.person-name { font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 16px; }
+.person-meta { font-size: 13px; color: var(--ink-600); margin-top: 2px; }
+.status-chip {
+  font-family: 'Archivo', sans-serif;
+  font-weight: 700;
+  font-size: 12px;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--ink-100);
+  color: var(--ink-600);
+  white-space: nowrap;
+}
+.status-chip.done { background: var(--green-500); color: var(--white); }
+.status-chip.baja { background: var(--red-500); color: var(--white); }
+
+.actions-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+
+.edit-panel {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--ink-200);
+  display: none;
+}
+.edit-panel.open { display: block; }
+.edit-panel .field-label { font-size: 13px; margin-bottom: 6px; }
+.edit-panel select, .edit-panel input[type=text] { font-size: 14px; padding: 10px 12px; margin-bottom: 12px; }
+
+.section-title {
+  font-family: 'Archivo', sans-serif;
+  font-weight: 800;
+  font-size: 18px;
+  margin: 0 0 4px;
+}
+.section-sub { color: var(--ink-600); font-size: 14px; margin: 0 0 16px; }
+
+.banner {
+  background: var(--sun-300);
+  color: var(--ink-900);
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 14px;
+  margin-bottom: 20px;
+  display: none;
+}
+.banner.show { display: block; }
+
+.badge-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 8px;
+  border-radius: var(--radius-pill);
+  background: var(--blue-500);
+  color: var(--white);
+  font-family: 'Archivo', sans-serif;
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.loading { text-align: center; color: var(--ink-400); padding: 30px 0; font-size: 14px; }
+
+.final-screen { text-align: center; padding: 40px 20px; }
+.final-screen .check {
+  width: 72px; height: 72px; border-radius: 50%;
+  background: var(--green-500); color: var(--white);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 36px; margin: 0 auto 20px;
+}
+
+.new-person-form { display: none; margin-top: 14px; padding: 16px; background: var(--blue-50); border-radius: 12px; }
+.new-person-form.open { display: block; }
+
+footer.foot { text-align: center; color: var(--ink-400); font-size: 12px; margin-top: 40px; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header class="top">
+    <span class="eyebrow">CEM · Centro Estadístico Municipal</span>
+    <h1>Actualización de <span class="box">Planta 2026</span></h1>
+    <p class="subtitle">Revisá el equipo de tu dirección: confirmá quiénes siguen, marcá bajas, actualizá el régimen de contratación y sumá altas.</p>
+  </header>
+
+  <!-- PASO 1: elegir dirección -->
+  <div class="card" id="step-select">
+    <div class="section-title">Elegí tu dirección</div>
+    <p class="section-sub">Vas a ver el equipo relevado hace 3 meses para esa área.</p>
+    <label class="field-label" for="direccion-select">Dirección / Unidad</label>
+    <select id="direccion-select">
+      <option value="">Cargando direcciones…</option>
+    </select>
+    <div class="hint">¿Tu área no aparece o está mal asignada? Elegí la más cercana y avisanos por separado, o agregala como "alta".</div>
+  </div>
+
+  <!-- Banner de motivo global opcional -->
+  <div class="banner" id="banner-info"></div>
+
+  <!-- PASO 2: listado de personas -->
+  <div class="card" id="step-people" style="display:none;">
+    <div class="section-title">Equipo relevado <span class="badge-count" id="count-badge">0</span></div>
+    <p class="section-sub">Por cada persona: confirmá si sigue igual, modificá el régimen de contratación u otro dato, o dala de baja.</p>
+    <div id="loading-people" class="loading">Cargando equipo…</div>
+    <div id="people-list"></div>
+
+    <button class="btn btn-ghost" id="btn-add-person" style="margin-top:10px;">+ Agregar persona nueva</button>
+
+    <div class="new-person-form" id="new-person-form">
+      <label class="field-label">Nombre y apellido</label>
+      <input type="text" id="np-nombre" placeholder="Ej: PEREZ, ANA">
+      <label class="field-label">DNI (opcional)</label>
+      <input type="text" id="np-dni" placeholder="Ej: 30123456">
+      <label class="field-label">Régimen de contratación</label>
+      <select id="np-tipo-contratacion">
+        <option value="Planta permanente">Planta permanente</option>
+        <option value="Contratado">Contratado</option>
+        <option value="Quincenal">Quincenal</option>
+        <option value="no sabe">No sabe / a confirmar</option>
+      </select>
+      <label class="field-label">Función / tarea (opcional)</label>
+      <input type="text" id="np-funcion" placeholder="Ej: Administrativo">
+      <label class="field-label">Motivo del alta</label>
+      <select id="np-motivo">
+        <option value="PIC">Programa de Inclusión Comunitaria (PIC)</option>
+        <option value="Otra iniciativa">Otra iniciativa</option>
+        <option value="Rotación normal">Rotación / reemplazo normal</option>
+        <option value="Otro">Otro</option>
+      </select>
+      <div class="actions-row">
+        <button class="btn btn-primary btn-small" id="np-guardar">Guardar alta</button>
+        <button class="btn btn-ghost btn-small" id="np-cancelar">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirmación de quién completa el formulario -->
+  <div class="card" id="step-respondente" style="display:none;">
+    <div class="section-title">¿Quién completa este formulario?</div>
+    <label class="field-label" for="respondente-input">Nombre y cargo</label>
+    <input type="text" id="respondente-input" placeholder="Ej: Pedro Reboledo — Director de Tránsito">
+  </div>
+
+  <div class="final-screen" id="final-screen" style="display:none;">
+    <div class="check">✓</div>
+    <div class="section-title">¡Listo!</div>
+    <p class="section-sub">Los cambios se guardaron. Gracias por actualizar la información de tu equipo.</p>
+  </div>
+
+  <footer class="foot">Municipalidad de Esquina · Centro Estadístico Municipal · 2026</footer>
+</div>
+
+<script>
+// ============================================================
+// CONFIGURACIÓN: pegar acá la URL del Apps Script Web App (/exec)
+// ============================================================
+const API_URL = 'https://script.google.com/macros/s/AKfycbxUcp9dn35Y0wPb62L2IOmHFSGcH4iYshbYDJTY2Mw0BnSuagYJwwQdihLra5favOb0Ww/exec';
+
+const state = {
+  direccion: null,
+  personal: [],
+  respondente: '',
+  changes: {} // id_persona -> {tipo_accion, ...}
+};
+
+const $ = (sel) => document.querySelector(sel);
+
+async function apiGet(params) {
+  const url = API_URL + '?' + new URLSearchParams(params).toString();
+  const res = await fetch(url);
+  return res.json();
+}
+
+async function apiPost(body) {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(body)
+  });
+  return res.json();
+}
+
+async function initDirecciones() {
+  const select = $('#direccion-select');
+  try {
+    const data = await apiGet({ action: 'list_direcciones' });
+    if (!data.ok) throw new Error(data.error);
+    select.innerHTML = '<option value="">— Elegí una dirección —</option>' +
+      data.direcciones.map(d => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join('');
+  } catch (err) {
+    select.innerHTML = '<option value="">Error al cargar. Recargá la página.</option>';
+    console.error(err);
+  }
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+$('#direccion-select').addEventListener('change', async (e) => {
+  const direccion = e.target.value;
+  if (!direccion) {
+    $('#step-people').style.display = 'none';
+    $('#step-respondente').style.display = 'none';
+    return;
+  }
+  state.direccion = direccion;
+  $('#step-people').style.display = 'block';
+  $('#step-respondente').style.display = 'block';
+  $('#loading-people').style.display = 'block';
+  $('#people-list').innerHTML = '';
+
+  const data = await apiGet({ action: 'get_personal', direccion });
+  $('#loading-people').style.display = 'none';
+  if (!data.ok) {
+    $('#people-list').innerHTML = '<p>Ocurrió un error cargando el equipo. Probá de nuevo.</p>';
+    return;
+  }
+  state.personal = data.personal;
+  $('#count-badge').textContent = state.personal.length;
+  renderPeople();
+});
+
+function renderPeople() {
+  const container = $('#people-list');
+  if (state.personal.length === 0) {
+    container.innerHTML = '<p style="color:var(--ink-600)">No hay personas relevadas para esta dirección todavía. Podés agregar altas abajo.</p>';
+    return;
+  }
+  container.innerHTML = state.personal.map(p => personCardHtml(p)).join('');
+
+  state.personal.forEach(p => {
+    const card = document.getElementById('card-' + p.id_persona);
+    card.querySelector('.btn-confirmar').addEventListener('click', () => onConfirmar(p.id_persona));
+    card.querySelector('.btn-modificar').addEventListener('click', () => togglePanel(p.id_persona));
+    card.querySelector('.btn-baja').addEventListener('click', () => onBaja(p.id_persona));
+    card.querySelector('.btn-guardar-mod').addEventListener('click', () => onGuardarModificacion(p.id_persona));
+  });
+}
+
+function personCardHtml(p) {
+  return `
+  <div class="person-card" id="card-${p.id_persona}">
+    <div class="person-head">
+      <div>
+        <div class="person-name">${escapeHtml(p.nombre)}</div>
+        <div class="person-meta">${escapeHtml(p.tipo_contratacion || 'Régimen no informado')}${p.funcion_tarea ? ' · ' + escapeHtml(p.funcion_tarea) : ''}</div>
+      </div>
+      <span class="status-chip" id="chip-${p.id_persona}">Pendiente</span>
+    </div>
+    <div class="actions-row">
+      <button class="btn btn-primary btn-small btn-confirmar">Confirmar sin cambios</button>
+      <button class="btn btn-ghost btn-small btn-modificar">Modificar régimen</button>
+      <button class="btn btn-danger btn-small btn-baja">Dar de baja</button>
+    </div>
+    <div class="edit-panel" id="panel-${p.id_persona}">
+      <label class="field-label">Nuevo régimen de contratación</label>
+      <select id="new-regimen-${p.id_persona}">
+        <option value="Planta permanente">Planta permanente</option>
+        <option value="Contratado">Contratado</option>
+        <option value="Quincenal">Quincenal</option>
+        <option value="no sabe">No sabe / a confirmar</option>
+      </select>
+      <label class="field-label">Motivo del cambio</label>
+      <select id="motivo-mod-${p.id_persona}">
+        <option value="PIC">Programa de Inclusión Comunitaria (PIC)</option>
+        <option value="Otra iniciativa">Otra iniciativa</option>
+        <option value="Rotación normal">Rotación / ajuste normal</option>
+        <option value="Otro">Otro</option>
+      </select>
+      <button class="btn btn-primary btn-small btn-guardar-mod">Guardar modificación</button>
+    </div>
+  </div>`;
+}
+
+function togglePanel(id) {
+  document.getElementById('panel-' + id).classList.toggle('open');
+}
+
+function markDone(id, label, cls) {
+  const card = document.getElementById('card-' + id);
+  const chip = document.getElementById('chip-' + id);
+  chip.textContent = label;
+  chip.className = 'status-chip ' + cls;
+  card.className = 'person-card ' + cls;
+}
+
+async function ensureRespondente() {
+  const val = $('#respondente-input').value.trim();
+  if (!val) {
+    alert('Antes de registrar cambios, contanos quién completa el formulario (arriba de este equipo).');
+    $('#respondente-input').focus();
+    return null;
+  }
+  state.respondente = val;
+  return val;
+}
+
+async function onConfirmar(id) {
+  const respondente = await ensureRespondente();
+  if (!respondente) return;
+  const res = await apiPost({ action: 'confirmar', id_persona: id, respondente });
+  if (res.ok) markDone(id, 'Confirmado', 'done');
+  else alert('Error: ' + res.error);
+}
+
+async function onGuardarModificacion(id) {
+  const respondente = await ensureRespondente();
+  if (!respondente) return;
+  const nuevoValor = document.getElementById('new-regimen-' + id).value;
+  const motivo = document.getElementById('motivo-mod-' + id).value;
+  const res = await apiPost({
+    action: 'modificar', id_persona: id, campo: 'tipo_contratacion',
+    valor_nuevo: nuevoValor, motivo, respondente
+  });
+  if (res.ok) {
+    markDone(id, 'Modificado', 'done');
+    togglePanel(id);
+  } else alert('Error: ' + res.error);
+}
+
+async function onBaja(id) {
+  const respondente = await ensureRespondente();
+  if (!respondente) return;
+  const motivo = prompt('Motivo de la baja (ej: PIC, renuncia, otra iniciativa, rotación normal):', 'PIC');
+  if (motivo === null) return;
+  const res = await apiPost({ action: 'baja', id_persona: id, motivo, respondente });
+  if (res.ok) markDone(id, 'Baja', 'baja');
+  else alert('Error: ' + res.error);
+}
+
+$('#btn-add-person').addEventListener('click', () => {
+  $('#new-person-form').classList.toggle('open');
+});
+$('#np-cancelar').addEventListener('click', () => {
+  $('#new-person-form').classList.remove('open');
+});
+$('#np-guardar').addEventListener('click', async () => {
+  const respondente = await ensureRespondente();
+  if (!respondente) return;
+  const nombre = $('#np-nombre').value.trim();
+  if (!nombre) { alert('Falta el nombre.'); return; }
+  const body = {
+    action: 'alta',
+    direccion: state.direccion,
+    nombre,
+    dni: $('#np-dni').value.trim(),
+    tipo_contratacion: $('#np-tipo-contratacion').value,
+    funcion_tarea: $('#np-funcion').value.trim(),
+    motivo: $('#np-motivo').value,
+    respondente
+  };
+  const res = await apiPost(body);
+  if (res.ok) {
+    state.personal.push({
+      id_persona: res.id_persona, nombre, tipo_contratacion: body.tipo_contratacion, funcion_tarea: body.funcion_tarea
+    });
+    $('#count-badge').textContent = state.personal.length;
+    renderPeople();
+    markDone(res.id_persona, 'Alta nueva', 'done');
+    $('#np-nombre').value = ''; $('#np-dni').value = ''; $('#np-funcion').value = '';
+    $('#new-person-form').classList.remove('open');
+  } else {
+    alert('Error: ' + res.error);
+  }
+});
+
+initDirecciones();
+</script>
+
+</body>
+</html>
